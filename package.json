@@ -1,11 +1,14 @@
 {
   "name": "statiq-tags",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Tag indexes for statiq websites",
   "main": "index.js",
   "repository": {
     "url": "git://github.com/ezakto/statiq.git",
     "type": "git"
+  },
+  "peerDependencies": {
+    "statiq": ">=0.5.1"
   },
   "author": "Nicolás Arias",
   "license": "MIT"
