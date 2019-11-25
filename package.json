@@ -4,11 +4,11 @@
   "description": "Tag indexes for statiq websites",
   "main": "index.js",
   "repository": {
-    "url": "git://github.com/ezakto/statiq.git",
+    "url": "git://github.com/ezakto/statiq-tags.git",
     "type": "git"
   },
   "peerDependencies": {
-    "statiq": ">=0.5.1"
+    "statiq": ">=0.7.4"
   },
   "author": "Nicolás Arias",
   "license": "MIT"

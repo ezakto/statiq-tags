@@ -1,37 +1,59 @@
 const path = require('path');
 
-module.exports = function(options) {
-  return function(statiq) {
-    const { contextHandler, indexHandler } = statiq._config;
-    const { key } = Object.assign({ key: 'tags' }, options);
-    const tags = {};
+const skippers = {
+  index(document) {
+    const { contentExtension } = this.config();
+    return path.basename(document.contentPath, contentExtension) === 'index';
+  },
 
-    statiq.config({
-      contextHandler: function(context, source, target) {
-        const ctx = contextHandler(context, source, target);
-        const ctxTags = Array.isArray(ctx[key]) ? ctx[key] : (ctx[key] || 'untagged').split(',');
+  root(document) {
+    const { cwd, contentPath } = this.config();
+    return path.dirname(document.contentPath) === path.join(cwd, contentPath);
+  },
+};
 
-        ctxTags.forEach(tag => {
-          tag = tag.trim();
-          if (!tags[tag]) tags[tag] = [];
-          tags[tag].push(Object.assign({}, context, { path: target }));
-        });
+module.exports = (options = {}) => {
+  const {
+    key = 'tags',
+    untagged = true,
+    lowercase = true,
+    skip = 'index',
+  } = options;
 
-        return ctx;
-      },
+  const skipFunc = typeof skip === 'string' ? skippers[skip] : skip;
+  const tags = {};
 
-      indexHandler: function(index, source, target) {
-        const idx = indexHandler(index, source, target);
-        idx[key] = {};
+  return {
+    afterRead(document) {
+      const { context, publishPath } = document;
+      const docTags = Array.isArray(context[key]) ? context[key] : (context[key] || 'untagged').split(',');
 
-        Object.keys(tags).forEach(tag => {
-          idx[key][tag] = tags[tag].map(ctx => {
-            return Object.assign({}, ctx, { path: path.relative(path.dirname(target), ctx.path) });
-          });
-        });
+      docTags.forEach(tag => {
+        let t = tag.trim();
 
-        return idx;
-      }
-    });
+        if (lowercase) t = t.toLowerCase();
+        if (!untagged && t === 'untagged') return;
+        if (skipFunc.call(this, document)) return;
+        if (!tags[t]) tags[t] = [];
+
+        tags[t].push({ ...context, path: publishPath });
+      });
+    },
+
+    beforeBuild(document) {
+      const { context, publishPath } = document;
+      const { index } = context;
+
+      index[key] = {};
+
+      Object.entries(tags).forEach(([tag, documents]) => {
+        index[key][tag] = documents.map(ctx => ({
+          ...ctx,
+          path: path.relative(path.dirname(publishPath), ctx.path),
+        }));
+      });
+
+      return document;
+    },
   };
-}
+};
